@@ -14,7 +14,8 @@ class SeleniumMiddleware:
     """Scrapy middleware handling the requests using selenium"""
 
     def __init__(self, driver_name, driver_executable_path,
-        browser_executable_path, command_executor, driver_arguments):
+                 browser_executable_path, command_executor,
+                 driver_arguments, driver_capabilities, driver_experimental_options):
         """Initialize the selenium webdriver
 
         Parameters
@@ -46,6 +47,12 @@ class SeleniumMiddleware:
         for argument in driver_arguments:
             driver_options.add_argument(argument)
 
+        for capability, value in driver_capabilities.items():
+            driver_options.set_capability(capability, value)
+
+        for experimental_option, value in driver_experimental_options.items():
+            driver_options.add_experimental_option(experimental_option, value)
+
         driver_kwargs = {
             'executable_path': driver_executable_path,
             f'{driver_name}_options': driver_options
@@ -61,17 +68,18 @@ class SeleniumMiddleware:
         # remote driver
         elif command_executor is not None:
             from selenium import webdriver
-            capabilities = driver_options.to_capabilities()
             self.driver = webdriver.Remote(command_executor=command_executor,
-                                           desired_capabilities=capabilities)
+                                           options=driver_options)
 
     @classmethod
     def from_crawler(cls, crawler):
         """Initialize the middleware with the crawler settings"""
 
         driver_name = crawler.settings.get('SELENIUM_DRIVER_NAME')
-        driver_executable_path = crawler.settings.get('SELENIUM_DRIVER_EXECUTABLE_PATH')
-        browser_executable_path = crawler.settings.get('SELENIUM_BROWSER_EXECUTABLE_PATH')
+        driver_executable_path = crawler.settings.get(
+            'SELENIUM_DRIVER_EXECUTABLE_PATH')
+        browser_executable_path = crawler.settings.get(
+            'SELENIUM_BROWSER_EXECUTABLE_PATH')
         command_executor = crawler.settings.get('SELENIUM_COMMAND_EXECUTOR')
         driver_arguments = crawler.settings.get('SELENIUM_DRIVER_ARGUMENTS')
 
@@ -90,15 +98,24 @@ class SeleniumMiddleware:
             driver_arguments=driver_arguments
         )
 
-        crawler.signals.connect(middleware.spider_closed, signals.spider_closed)
+        crawler.signals.connect(
+            middleware.spider_closed, signals.spider_closed)
 
         return middleware
 
     def process_request(self, request, spider):
         """Process a request using the selenium driver if applicable"""
+        if not isinstance(request, SeleniumRequest) and request.meta.get('selenium', False):
+            # Upgrade to SeleniumRequest
+            request.__class__ = SeleniumRequest
+            request.wait_time = request.meta.get('wait_time', 10)
+            request.wait_until = request.meta.get('wait_until', None)
+            request.screenshot = request.meta.get('screenshot', False)
+            request.script = request.meta.get('script', None)
 
+        #
         if not isinstance(request, SeleniumRequest):
-            return None
+            return
 
         self.driver.get(request.url)
 
@@ -121,7 +138,8 @@ class SeleniumMiddleware:
         if request.script:
             self.driver.execute_script(request.script)
 
-        body = str.encode(self.driver.page_source)
+        body = self.driver.execute_script(
+            "return document.documentElement.outerHTML")
 
         # Expose the driver via the "meta" attribute
         request.meta.update({'driver': self.driver})
@@ -137,4 +155,3 @@ class SeleniumMiddleware:
         """Shutdown the driver when spider is closed"""
 
         self.driver.quit()
-

@@ -9,10 +9,5 @@ requires-python = ">=3.13"
 dependencies = [
     "scrapy>=2.13.3",
     "selenium>=4.35.0",
+    "webdriver-manager>=4.0.2",
 ]
-
-# [[tool.uv.index]]
-# name = "pypi"
-# url = "https://mirrors.aliyun.com/pypi/simple/"
-# publish-url = "https://test.pypi.org/legacy/"
-# default = true

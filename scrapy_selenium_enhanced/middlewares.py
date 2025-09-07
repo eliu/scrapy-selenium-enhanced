@@ -76,12 +76,12 @@ class SeleniumMiddleware:
         """Initialize the middleware with the crawler settings"""
 
         driver_name = crawler.settings.get('SELENIUM_DRIVER_NAME')
-        driver_executable_path = crawler.settings.get(
-            'SELENIUM_DRIVER_EXECUTABLE_PATH')
-        browser_executable_path = crawler.settings.get(
-            'SELENIUM_BROWSER_EXECUTABLE_PATH')
+        driver_executable_path = crawler.settings.get('SELENIUM_DRIVER_EXECUTABLE_PATH')
+        browser_executable_path = crawler.settings.get('SELENIUM_BROWSER_EXECUTABLE_PATH')
         command_executor = crawler.settings.get('SELENIUM_COMMAND_EXECUTOR')
-        driver_arguments = crawler.settings.get('SELENIUM_DRIVER_ARGUMENTS')
+        driver_arguments = crawler.settings.get('SELENIUM_DRIVER_ARGUMENTS', [])
+        driver_capabilities = crawler.settings.get('SELENIUM_DRIVER_CAPABILITIES', {})
+        driver_experimental_options = crawler.settings.get('SELENIUM_DRIVER_EXPERIMENTAL_OPTIONS', {})
 
         if driver_name is None:
             raise NotConfigured('SELENIUM_DRIVER_NAME must be set')
@@ -95,7 +95,9 @@ class SeleniumMiddleware:
             driver_executable_path=driver_executable_path,
             browser_executable_path=browser_executable_path,
             command_executor=command_executor,
-            driver_arguments=driver_arguments
+            driver_arguments=driver_arguments,
+            driver_capabilities=driver_capabilities,
+            driver_experimental_options=driver_experimental_options,
         )
 
         crawler.signals.connect(
@@ -105,21 +107,22 @@ class SeleniumMiddleware:
 
     def process_request(self, request, spider):
         """Process a request using the selenium driver if applicable"""
+        
         if not isinstance(request, SeleniumRequest) and request.meta.get('selenium', False):
             # Upgrade to SeleniumRequest
             request.__class__ = SeleniumRequest
-            request.wait_time = request.meta.get('wait_time', 10)
+            request.wait_time = float(request.meta.get('wait_time', 10))
             request.wait_until = request.meta.get('wait_until', None)
             request.screenshot = request.meta.get('screenshot', False)
             request.script = request.meta.get('script', None)
 
-        #
+        # Let
         if not isinstance(request, SeleniumRequest):
             return
 
         self.driver.get(request.url)
 
-        for cookie_name, cookie_value in request.cookies.items():
+        for cookie_name, cookie_value in request.cookies:
             self.driver.add_cookie(
                 {
                     'name': cookie_name,
@@ -127,7 +130,7 @@ class SeleniumMiddleware:
                 }
             )
 
-        if request.wait_until:
+        if request.wait_until and request.wait_time:
             WebDriverWait(self.driver, request.wait_time).until(
                 request.wait_until
             )

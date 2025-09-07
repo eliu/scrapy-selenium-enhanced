@@ -5,8 +5,8 @@ from unittest.mock import patch
 from scrapy import Request
 from scrapy.crawler import Crawler
 
-from scrapy_selenium.http import SeleniumRequest
-from scrapy_selenium.middlewares import SeleniumMiddleware
+from scrapy_selenium_enhanced.http import SeleniumRequest
+from scrapy_selenium_enhanced.middlewares import SeleniumMiddleware
 
 from .test_cases import BaseScrapySeleniumTestCase
 
@@ -93,13 +93,13 @@ class SeleniumMiddlewareTestCase(BaseScrapySeleniumTestCase):
 
         # We have access to the driver on the response via the "meta"
         self.assertEqual(
-            html_response.meta['driver'],
+            html_response.request.meta['driver'],
             self.selenium_middleware.driver
         )
 
         # We also have access to the "selector" attribute on the response
         self.assertEqual(
-            html_response.selector.xpath('//title/text()').extract_first(),
+            html_response.xpath('//title/text()').extract_first(),
             'Welcome to Python.org'
         )
 
@@ -116,7 +116,7 @@ class SeleniumMiddlewareTestCase(BaseScrapySeleniumTestCase):
             spider=None
         )
 
-        self.assertIsNotNone(html_response.meta['screenshot'])
+        self.assertIsNotNone(html_response.request.meta['screenshot'])
 
     def test_process_request_should_execute_script_if_script_option(self):
         """Test that the ``process_request`` should execute the script and return a response"""
@@ -132,6 +132,6 @@ class SeleniumMiddlewareTestCase(BaseScrapySeleniumTestCase):
         )
 
         self.assertEqual(
-            html_response.selector.xpath('//title/text()').extract_first(),
+            html_response.xpath('//title/text()').extract_first(),
             'scrapy_selenium'
         )

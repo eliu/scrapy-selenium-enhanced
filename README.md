@@ -17,44 +17,48 @@ You will also need one of the Selenium [compatible browsers](http://www.selenium
 
 1. Add the browser to use, the path to the driver executable, and the arguments to pass to the executable to the scrapy settings:
    
-   ```python
-   from shutil import which
-   
-   SELENIUM_DRIVER_NAME = 'firefox'
-   SELENIUM_DRIVER_EXECUTABLE_PATH = which('geckodriver')
-   SELENIUM_DRIVER_ARGUMENTS=['-headless']  # '--headless' if using chrome instead of firefox
-   ```
+```python
+from shutil import which
+
+SELENIUM_DRIVER_NAME = 'chrome'
+SELENIUM_DRIVER_EXECUTABLE_PATH = which('chromedriver')
+# '-headless' if using firefox instead of chrome
+SELENIUM_DRIVER_ARGUMENTS=['--headless', f'user-agent={USER_AGENT}']
+```
 
 Optionally, set the path to the browser executable:
-    ```python
-    SELENIUM_BROWSER_EXECUTABLE_PATH = which('firefox')
-    ```
+
+```python
+SELENIUM_BROWSER_EXECUTABLE_PATH = which('chrome')
+```
 
 In order to use a remote Selenium driver, specify `SELENIUM_COMMAND_EXECUTOR` instead of `SELENIUM_DRIVER_EXECUTABLE_PATH`:
-    ```python
-    SELENIUM_COMMAND_EXECUTOR = 'http://localhost:4444/wd/hub'
-    ```
+    
+```python
+SELENIUM_COMMAND_EXECUTOR = 'http://localhost:4444/wd/hub'
+```
 
 2. Add the `SeleniumMiddleware` to the downloader middlewares:
    
-   ```python
-   DOWNLOADER_MIDDLEWARES = {
-       'scrapy_selenium_enhanced.SeleniumMiddleware': 800
-   }
-   ```
-   
-   ## Usage
-   
-   Use the `scrapy_selenium.SeleniumRequest` instead of the scrapy built-in `Request` like below:
-   
-   ```python
-   from scrapy_selenium_enhanced import SeleniumRequest
-   ```
-
-yield SeleniumRequest(url=url, callback=self.parse_result)
-
+```python
+DOWNLOADER_MIDDLEWARES = {
+    'scrapy_selenium_enhanced.SeleniumMiddleware': 800
+}
 ```
+   
+   
+   
+## Usage
+
+Use the `scrapy_selenium.SeleniumRequest` instead of the scrapy built-in `Request` like below:
+
+```python
+from scrapy_selenium_enhanced import SeleniumRequest
+yield SeleniumRequest(url=url, callback=self.parse_result)
+```
+
 The request will be handled by selenium, and the request will have an additional `meta` key, named `driver` containing the selenium driver with the request processed.
+
 ```python
 def parse_result(self, response):
     print(response.request.meta['driver'].title)
@@ -66,12 +70,12 @@ The `selector` response attribute work as usual (but contains the html processed
 
 ```python
 def parse_result(self, response):
-    print(response.selector.xpath('//title/@text'))
+    print(response.xpath('//title/@text'))
 ```
 
 ### Additional arguments
 
-The `scrapy_selenium.SeleniumRequest` accept 4 additional arguments:
+The `scrapy_selenium_enhanced.SeleniumRequest` accept 4 additional arguments:
 
 #### `wait_time` / `wait_until`
 

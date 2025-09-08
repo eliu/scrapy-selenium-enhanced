@@ -37,6 +37,9 @@ class SeleniumMiddleware:
         driver_klass_module = import_module(f'{webdriver_base_path}.webdriver')
         driver_klass = getattr(driver_klass_module, 'WebDriver')
 
+        driver_service_module = import_module(f'{webdriver_base_path}.service')
+        driver_service_klass = getattr(driver_service_module, 'Service')
+
         driver_options_module = import_module(f'{webdriver_base_path}.options')
         driver_options_klass = getattr(driver_options_module, 'Options')
 
@@ -53,16 +56,11 @@ class SeleniumMiddleware:
         for experimental_option, value in driver_experimental_options.items():
             driver_options.add_experimental_option(experimental_option, value)
 
-        driver_kwargs = {
-            'executable_path': driver_executable_path,
-            f'{driver_name}_options': driver_options
-        }
-
         # locally installed driver
         if driver_executable_path is not None:
             driver_kwargs = {
-                'executable_path': driver_executable_path,
-                f'{driver_name}_options': driver_options
+                'service': driver_service_klass(executable_path=driver_executable_path),
+                'options': driver_options
             }
             self.driver = driver_klass(**driver_kwargs)
         # remote driver
@@ -76,12 +74,17 @@ class SeleniumMiddleware:
         """Initialize the middleware with the crawler settings"""
 
         driver_name = crawler.settings.get('SELENIUM_DRIVER_NAME')
-        driver_executable_path = crawler.settings.get('SELENIUM_DRIVER_EXECUTABLE_PATH')
-        browser_executable_path = crawler.settings.get('SELENIUM_BROWSER_EXECUTABLE_PATH')
+        driver_executable_path = crawler.settings.get(
+            'SELENIUM_DRIVER_EXECUTABLE_PATH')
+        browser_executable_path = crawler.settings.get(
+            'SELENIUM_BROWSER_EXECUTABLE_PATH')
         command_executor = crawler.settings.get('SELENIUM_COMMAND_EXECUTOR')
-        driver_arguments = crawler.settings.get('SELENIUM_DRIVER_ARGUMENTS', [])
-        driver_capabilities = crawler.settings.get('SELENIUM_DRIVER_CAPABILITIES', {})
-        driver_experimental_options = crawler.settings.get('SELENIUM_DRIVER_EXPERIMENTAL_OPTIONS', {})
+        driver_arguments = crawler.settings.get(
+            'SELENIUM_DRIVER_ARGUMENTS', [])
+        driver_capabilities = crawler.settings.get(
+            'SELENIUM_DRIVER_CAPABILITIES', {})
+        driver_experimental_options = crawler.settings.get(
+            'SELENIUM_DRIVER_EXPERIMENTAL_OPTIONS', {})
 
         if driver_name is None:
             raise NotConfigured('SELENIUM_DRIVER_NAME must be set')
@@ -107,7 +110,7 @@ class SeleniumMiddleware:
 
     def process_request(self, request, spider):
         """Process a request using the selenium driver if applicable"""
-        
+
         if not isinstance(request, SeleniumRequest) and request.meta.get('selenium', False):
             # Upgrade to SeleniumRequest
             request.__class__ = SeleniumRequest

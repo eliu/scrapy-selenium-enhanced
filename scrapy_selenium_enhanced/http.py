@@ -10,7 +10,7 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager
 
-import defaults
+import scrapy_selenium_enhanced.defaults as defaults
 
 logger = logging.getLogger(__name__)
 

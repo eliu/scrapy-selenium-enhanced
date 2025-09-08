@@ -20,7 +20,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager
 
-import defaults
+import scrapy_selenium_enhanced.defaults as defaults
 
 logger = logging.getLogger(__name__)
 
